@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 const FileUpload = ({ onSelectFile, selectedFileId }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState([]);
+  const [filter, setFilter] = useState('all'); // 'all', 'processing', 'completed'
   const fileInputRef = useRef(null);
 
   const formatSize = (bytes) => {
@@ -33,6 +34,12 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
         
         // Simulate Processing delay (AI extraction)
         setTimeout(() => {
+          // 15% chance to fail
+          if (Math.random() < 0.15) {
+            setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'failed' } : f));
+            return;
+          }
+
           const randomType = documentTypes[Math.floor(Math.random() * documentTypes.length)];
           const mockData = {
             type: randomType.type.toLowerCase(),
@@ -135,17 +142,64 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
         />
       </div>
 
+      {/* Dashboard Stats & Filters */}
+      <div className="mt-8 mb-4 flex flex-col gap-6">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+            <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Completed</span>
+            <span className="text-2xl font-extrabold text-[#6366F1]">{files.filter(f => f.status === 'done').length}</span>
+          </div>
+          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+            <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Processing</span>
+            <span className="text-2xl font-extrabold text-orange-400">{files.filter(f => f.status === 'processing' || f.status === 'uploading').length}</span>
+          </div>
+          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+            <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Failed</span>
+            <span className="text-2xl font-extrabold text-red-500">{files.filter(f => f.status === 'failed').length}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-b border-[#C2CBD3]/20 pb-2">
+          <h3 className="text-lg font-bold text-[#313851]">File History</h3>
+          <div className="flex bg-[#F6F3ED] rounded-lg p-1">
+            {['all', 'processing', 'completed'].map(f => (
+              <button 
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all capitalize ${filter === f ? 'bg-white text-[#6366F1] shadow-sm' : 'text-[#313851]/60 hover:text-[#313851]'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* File List */}
-      {files.length > 0 && (
-        <div className="mt-6 flex flex-col gap-3">
-          {files.map((fileObj) => (
+      <div className="flex flex-col gap-3 min-h-[200px]">
+        {files.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center text-[#313851]/40 border-2 border-dashed border-[#C2CBD3]/30 rounded-xl bg-[#F6F3ED]/20">
+            <p className="text-sm font-medium">No files uploaded yet.</p>
+          </div>
+        ) : (
+          files.filter(f => {
+            if (filter === 'processing') return f.status === 'processing' || f.status === 'uploading';
+            if (filter === 'completed') return f.status === 'done';
+            return true;
+          }).map((fileObj) => (
             <div 
               key={fileObj.id} 
-              onClick={() => onSelectFile && onSelectFile(fileObj)}
-              className={`relative overflow-hidden bg-white border rounded-xl p-4 transition-all cursor-pointer ${
+              onClick={() => {
+                if(fileObj.status === 'done' || fileObj.status === 'failed') {
+                  onSelectFile && onSelectFile(fileObj);
+                }
+              }}
+              className={`relative overflow-hidden bg-white border rounded-xl p-4 transition-all ${
+                (fileObj.status === 'done' || fileObj.status === 'failed') ? 'cursor-pointer hover:border-[#6366F1]/50' : 'opacity-90'
+              } ${
                 selectedFileId === fileObj.id 
                   ? 'border-[#6366F1] shadow-[0_4px_14px_-2px_rgba(99,102,241,0.2)]' 
-                  : 'border-[#C2CBD3]/30 shadow-[0_2px_10px_-2px_rgba(49,56,81,0.05)] hover:border-[#6366F1]/50'
+                  : 'border-[#C2CBD3]/30 shadow-[0_2px_10px_-2px_rgba(49,56,81,0.05)]'
               }`}
             >
               
@@ -159,17 +213,22 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
               
               <div className="flex items-start justify-between relative z-10 w-full">
                 <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                  <div className="w-10 h-10 bg-[#F6F3ED] rounded-lg flex items-center justify-center text-[#6366F1] flex-shrink-0 mt-0.5">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    fileObj.status === 'done' ? 'bg-green-50 text-green-500' : 
+                    fileObj.status === 'failed' ? 'bg-red-50 text-red-500' : 'bg-[#F6F3ED] text-[#6366F1]'
+                  }`}>
                     {fileObj.status === 'done' ? (
-                      <CheckCircle size={20} className="text-green-500" />
+                      <CheckCircle size={20} />
+                    ) : fileObj.status === 'failed' ? (
+                      <X size={20} />
                     ) : (
                       <File size={20} />
                     )}
                   </div>
                   
-                  <div className="flex flex-col text-left text-[#313851] flex-1 min-w-0">
+                  <div className="flex flex-col text-left flex-1 min-w-0">
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-sm font-semibold truncate max-w-[150px] sm:max-w-[200px]">{fileObj.file.name}</span>
+                      <span className={`text-sm font-semibold truncate max-w-[150px] sm:max-w-[200px] ${fileObj.status === 'failed' ? 'text-red-500' : 'text-[#313851]'}`}>{fileObj.file.name}</span>
                       {fileObj.status === 'done' && fileObj.classification && (
                         <motion.span 
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -207,6 +266,13 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
                           <span className="text-xs font-medium text-green-500">Ready</span>
                         </>
                       )}
+
+                      {fileObj.status === 'failed' && (
+                        <>
+                          <span className="w-1 h-1 bg-[#C2CBD3] rounded-full"></span>
+                          <span className="text-xs font-medium text-red-500">Extraction failed</span>
+                        </>
+                      )}
                     </div>
 
                     {/* Skeleton Loader inside the file item while processing */}
@@ -235,9 +301,9 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };
