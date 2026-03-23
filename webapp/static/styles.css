@@ -136,6 +136,18 @@ button:disabled {
   word-break: break-word;
 }
 
+.extracted-box {
+  margin: 6px 0 10px;
+  padding: 10px;
+  border: 1px solid #d7c9b6;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d2823;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 180px;
+}
+
 .hint {
   margin-top: 14px;
   font-size: 0.95rem;
