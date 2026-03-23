@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FileUpload from '../components/ui/FileUpload';
+import DataViewer from '../components/ui/DataViewer';
 
 const DashboardPage = () => {
+  const [selectedFile, setSelectedFile] = useState(null);
+
   return (
-    <div className="min-h-screen bg-[#F6F3ED] text-[#313851] font-sans selection:bg-[#6366F1]/20">
+    <div className="min-h-screen bg-[#F6F3ED] text-[#313851] font-sans selection:bg-[#6366F1]/20 flex flex-col">
       {/* Top Navbar */}
       <nav className="sticky top-0 z-50 bg-[#F6F3ED]/80 backdrop-blur-md border-b border-[#C2CBD3]/30">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -23,17 +26,20 @@ const DashboardPage = () => {
       </nav>
 
       {/* Main Area */}
-      <main className="w-full max-w-7xl mx-auto px-6 py-12 flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        {/* Empty State Card */}
-        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 md:p-12 flex flex-col items-center justify-center text-center border border-[#C2CBD3]/20">
-          
-          <h2 className="text-3xl font-extrabold text-[#313851] mb-3">Ingest your documents</h2>
-          <p className="text-[#313851]/70 text-lg">Upload files to extract structured data</p>
-
-          {/* Drag and Drop Modular Component */}
-          <FileUpload />
-
+      <main className="w-full max-w-7xl mx-auto px-6 py-8 flex gap-6 flex-1 h-[calc(100vh-4rem)]">
+        
+        {/* LEFT PANEL */}
+        <div className="w-1/2 flex flex-col bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 border border-[#C2CBD3]/20 overflow-y-auto">
+          <h2 className="text-2xl font-extrabold text-[#313851] mb-2">Ingest documents</h2>
+          <p className="text-[#313851]/70 mb-4">Upload files to extract structured data</p>
+          <FileUpload onSelectFile={setSelectedFile} selectedFileId={selectedFile?.id} />
         </div>
+
+        {/* RIGHT PANEL */}
+        <div className="w-1/2 flex flex-col bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 border border-[#C2CBD3]/20 overflow-y-auto">
+           <DataViewer file={selectedFile} />
+        </div>
+
       </main>
     </div>
   );

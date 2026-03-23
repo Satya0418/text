@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { UploadCloud, File, X, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const FileUpload = () => {
+const FileUpload = ({ onSelectFile, selectedFileId }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
@@ -34,7 +34,15 @@ const FileUpload = () => {
         // Simulate Processing delay (AI extraction)
         setTimeout(() => {
           const randomType = documentTypes[Math.floor(Math.random() * documentTypes.length)];
-          setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'done', classification: randomType } : f));
+          const mockData = {
+            type: randomType.type.toLowerCase(),
+            amount: '$' + (Math.floor(Math.random() * 5000) + 100).toFixed(2),
+            date: new Date().toISOString().split('T')[0],
+            vendor: ["Acme Corp", "TechFlow Inc.", "Global Services", "HealthPlus"][Math.floor(Math.random() * 4)],
+            status: "verified",
+            confidenceLevel: "98%"
+          };
+          setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'done', classification: randomType, extractedData: mockData } : f));
         }, 3000 + Math.random() * 2000);
       } else {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, progress: currentProgress } : f));
@@ -131,7 +139,15 @@ const FileUpload = () => {
       {files.length > 0 && (
         <div className="mt-6 flex flex-col gap-3">
           {files.map((fileObj) => (
-            <div key={fileObj.id} className="relative overflow-hidden bg-white border border-[#C2CBD3]/30 rounded-xl p-4 shadow-[0_2px_10px_-2px_rgba(49,56,81,0.05)] transition-all">
+            <div 
+              key={fileObj.id} 
+              onClick={() => onSelectFile && onSelectFile(fileObj)}
+              className={`relative overflow-hidden bg-white border rounded-xl p-4 transition-all cursor-pointer ${
+                selectedFileId === fileObj.id 
+                  ? 'border-[#6366F1] shadow-[0_4px_14px_-2px_rgba(99,102,241,0.2)]' 
+                  : 'border-[#C2CBD3]/30 shadow-[0_2px_10px_-2px_rgba(49,56,81,0.05)] hover:border-[#6366F1]/50'
+              }`}
+            >
               
               {/* Progress Bar Background */}
               {fileObj.status === 'uploading' && (
