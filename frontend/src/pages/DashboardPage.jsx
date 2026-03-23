@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload } from 'lucide-react';
+import FileUpload from '../components/ui/FileUpload';
 
 const DashboardPage = () => {
   return (
@@ -25,16 +25,13 @@ const DashboardPage = () => {
       {/* Main Area */}
       <main className="w-full max-w-7xl mx-auto px-6 py-12 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         {/* Empty State Card */}
-        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 md:p-12 flex flex-col items-center justify-center text-center gap-6 border border-[#C2CBD3]/20">
+        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 md:p-12 flex flex-col items-center justify-center text-center border border-[#C2CBD3]/20">
           
-          <div className="w-16 h-16 bg-[#F6F3ED] rounded-2xl flex items-center justify-center">
-            <Upload size={28} className="text-[#6366F1]" strokeWidth={2} />
-          </div>
+          <h2 className="text-3xl font-extrabold text-[#313851] mb-3">Ingest your documents</h2>
+          <p className="text-[#313851]/70 text-lg">Upload files to extract structured data</p>
 
-          <div>
-            <h2 className="text-2xl font-bold text-[#313851] mb-2">Ingest your documents</h2>
-            <p className="text-[#313851]/70">Upload files to extract structured data</p>
-          </div>
+          {/* Drag and Drop Modular Component */}
+          <FileUpload />
 
         </div>
       </main>
