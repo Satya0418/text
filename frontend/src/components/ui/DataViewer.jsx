@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Copy, Check } from 'lucide-react';
 
 const DataViewer = ({ file }) => {
-  const [viewMode, setViewMode] = useState('ui'); // 'ui', 'json', 'csv', 'text'
+  const [viewMode, setViewMode] = useState('ui'); // 'ui', 'json', 'csv', 'llm'
   const [activeFields, setActiveFields] = useState({});
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (file && file.extractedData) {
@@ -60,10 +62,67 @@ const DataViewer = ({ file }) => {
       const values = Object.values(filteredData).map(v => `"${v}"`);
       return `${keys.join(',')}\n${values.join(',')}`;
     }
-    if (viewMode === 'text') {
-      return Object.entries(filteredData).map(([k,v]) => `${k.toUpperCase()}: ${v}`).join('\n');
-    }
     return '';
+  };
+
+  const getLLMRawText = () => {
+    let type = filteredData.type ? (filteredData.type.charAt(0).toUpperCase() + filteredData.type.slice(1)) : 'Document';
+    let msg = type;
+    if (filteredData.vendor) msg += ` from ${filteredData.vendor}`;
+    if (filteredData.amount) msg += `, total ${filteredData.amount}`;
+    if (filteredData.date) msg += `, dated ${filteredData.date}`;
+    
+    const extraKeys = Object.keys(filteredData).filter(k => !['type', 'vendor', 'amount', 'date'].includes(k));
+    if (extraKeys.length > 0) {
+      msg += '. Additional details: ' + extraKeys.map(k => `${k} is ${filteredData[k]}`).join(', ');
+    }
+    return msg + '.';
+  };
+
+  const copyToClipboard = () => {
+    const text = viewMode === 'llm' ? getLLMRawText() : getFormatOutput();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const renderLLMText = () => {
+    if (Object.keys(filteredData).length === 0) return <span>No fields selected.</span>;
+
+    const parts = [];
+    const type = filteredData.type ? (
+      <span key="type" className="bg-[#6366F1]/20 text-[#6366F1] px-1.5 py-0.5 rounded-md font-bold">{filteredData.type.charAt(0).toUpperCase() + filteredData.type.slice(1)}</span>
+    ) : 'Document';
+    
+    parts.push(type);
+    
+    if (filteredData.vendor) {
+      parts.push(" from ");
+      parts.push(<span key="vendor" className="bg-[#6366F1]/20 text-[#6366F1] px-1.5 py-0.5 rounded-md font-bold">{filteredData.vendor}</span>);
+    }
+    
+    if (filteredData.amount) {
+      parts.push(", total ");
+      parts.push(<span key="amount" className="bg-[#6366F1]/20 text-[#6366F1] px-1.5 py-0.5 rounded-md font-bold">{filteredData.amount}</span>);
+    }
+    
+    if (filteredData.date) {
+      parts.push(", dated ");
+      parts.push(<span key="date" className="bg-[#6366F1]/20 text-[#6366F1] px-1.5 py-0.5 rounded-md font-bold">{filteredData.date}</span>);
+    }
+    
+    const extraKeys = Object.keys(filteredData).filter(k => !['type', 'vendor', 'amount', 'date'].includes(k));
+    if (extraKeys.length > 0) {
+      parts.push(". Additional details: ");
+      extraKeys.forEach((k, idx) => {
+        parts.push(`${k} is `);
+        parts.push(<span key={k} className="bg-[#C2CBD3]/40 text-[#313851] px-1.5 py-0.5 rounded-md font-bold">{filteredData[k]}</span>);
+        if (idx < extraKeys.length - 1) parts.push(", ");
+      });
+    }
+    
+    parts.push(".");
+    return <span className="text-[15px] leading-8">{parts}</span>;
   };
 
   return (
@@ -77,13 +136,13 @@ const DataViewer = ({ file }) => {
         
         {/* Toggle Formats */}
         <div className="flex bg-[#F6F3ED] rounded-lg p-1 flex-shrink-0 overflow-x-auto">
-          {['ui', 'json', 'csv', 'text'].map(mode => (
+          {['ui', 'json', 'csv', 'llm'].map(mode => (
             <button 
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize whitespace-nowrap ${viewMode === mode ? 'bg-white text-[#6366F1] shadow-[0_2px_8px_-2px_rgba(49,56,81,0.1)]' : 'text-[#313851]/60 hover:text-[#313851]'}`}
             >
-              {mode === 'ui' ? 'Clean UI' : mode === 'text' ? 'LLM Text' : mode.toUpperCase()}
+              {mode === 'ui' ? 'Clean UI' : mode === 'llm' ? 'LLM Ready' : mode.toUpperCase()}
             </button>
           ))}
         </div>
@@ -111,7 +170,20 @@ const DataViewer = ({ file }) => {
         </div>
 
         {/* Right Content - Viewer */}
-        <div className="w-2/3 flex flex-col overflow-y-auto pb-4 pr-2">
+        <div className="w-2/3 flex flex-col overflow-y-auto pb-4 pr-2 relative">
+          
+          {viewMode !== 'ui' && (
+            <button 
+              onClick={copyToClipboard}
+              className={`absolute top-2 right-2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                copied ? 'bg-green-100 text-green-700' : 'bg-[#C2CBD3]/30 text-[#313851]/70 hover:bg-[#C2CBD3]/50 hover:text-[#313851]'
+              }`}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          )}
+
           {viewMode === 'ui' ? (
             <div className="flex flex-col gap-3">
               <AnimatePresence mode="popLayout">
@@ -134,11 +206,19 @@ const DataViewer = ({ file }) => {
                 <p className="text-sm text-[#313851]/50 italic mt-2">All fields are hidden.</p>
               )}
             </div>
+          ) : viewMode === 'llm' ? (
+            <motion.div 
+              key="llm"
+              initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-[#F6F3ED]/40 rounded-xl p-6 text-[#313851] overflow-x-hidden min-h-full border border-[#C2CBD3]/20 pt-12 relative"
+            >
+              {renderLLMText()}
+            </motion.div>
           ) : (
             <motion.div 
               key={viewMode}
               initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-[#313851]/5 rounded-xl p-5 font-mono text-[13px] text-[#313851] overflow-x-auto min-h-full"
+              className="bg-[#313851]/5 rounded-xl p-6 font-mono text-[13px] text-[#313851] overflow-x-auto min-h-full pt-12 relative"
             >
               <pre className="whitespace-pre-wrap">{getFormatOutput()}</pre>
             </motion.div>
