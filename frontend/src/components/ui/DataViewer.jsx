@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DataViewer = ({ file }) => {
-  const [viewMode, setViewMode] = useState('ui'); // 'ui' or 'json'
+  const [viewMode, setViewMode] = useState('ui'); // 'ui', 'json', 'csv', 'text'
+  const [activeFields, setActiveFields] = useState({});
+
+  useEffect(() => {
+    if (file && file.extractedData) {
+      const initialFields = {};
+      Object.keys(file.extractedData).forEach(k => initialFields[k] = true);
+      setActiveFields(initialFields);
+    }
+  }, [file]);
+
+  const toggleField = (key) => {
+    setActiveFields(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   if (!file) {
     return (
@@ -28,52 +41,109 @@ const DataViewer = ({ file }) => {
 
   const { extractedData } = file;
 
+  // Create filtered data
+  const filteredData = {};
+  Object.keys(extractedData).forEach(k => {
+    if (activeFields[k]) {
+      filteredData[k] = extractedData[k];
+    }
+  });
+
+  const getFormatOutput = () => {
+    if (Object.keys(filteredData).length === 0) return 'No fields selected.';
+    
+    if (viewMode === 'json') {
+      return JSON.stringify(filteredData, null, 2);
+    }
+    if (viewMode === 'csv') {
+      const keys = Object.keys(filteredData);
+      const values = Object.values(filteredData).map(v => `"${v}"`);
+      return `${keys.join(',')}\n${values.join(',')}`;
+    }
+    if (viewMode === 'text') {
+      return Object.entries(filteredData).map(([k,v]) => `${k.toUpperCase()}: ${v}`).join('\n');
+    }
+    return '';
+  };
+
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#C2CBD3]/20">
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-6 pb-4 border-b border-[#C2CBD3]/20 gap-4">
         <div className="min-w-0 pr-4">
           <h3 className="text-xl font-bold text-[#313851] truncate">Extracted Data</h3>
           <p className="text-sm text-[#313851]/60 truncate max-w-xs">{file.file.name}</p>
         </div>
         
-        {/* Toggle View */}
-        <div className="flex bg-[#F6F3ED] rounded-lg p-1 flex-shrink-0">
-          <button 
-            onClick={() => setViewMode('ui')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'ui' ? 'bg-white text-[#6366F1] shadow-[0_2px_8px_-2px_rgba(49,56,81,0.1)]' : 'text-[#313851]/60 hover:text-[#313851]'}`}
-          >
-            Clean UI
-          </button>
-          <button 
-            onClick={() => setViewMode('json')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'json' ? 'bg-white text-[#6366F1] shadow-[0_2px_8px_-2px_rgba(49,56,81,0.1)]' : 'text-[#313851]/60 hover:text-[#313851]'}`}
-          >
-            Raw JSON
-          </button>
+        {/* Toggle Formats */}
+        <div className="flex bg-[#F6F3ED] rounded-lg p-1 flex-shrink-0 overflow-x-auto">
+          {['ui', 'json', 'csv', 'text'].map(mode => (
+            <button 
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize whitespace-nowrap ${viewMode === mode ? 'bg-white text-[#6366F1] shadow-[0_2px_8px_-2px_rgba(49,56,81,0.1)]' : 'text-[#313851]/60 hover:text-[#313851]'}`}
+            >
+              {mode === 'ui' ? 'Clean UI' : mode === 'text' ? 'LLM Text' : mode.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2">
-        {viewMode === 'json' ? (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-[#313851]/5 rounded-xl p-6 font-mono text-sm text-[#313851] overflow-x-auto"
-          >
-            <pre className="whitespace-pre-wrap">{JSON.stringify(extractedData, null, 2)}</pre>
-          </motion.div>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-4"
-          >
-            {Object.entries(extractedData).map(([key, value]) => (
-              <div key={key} className="flex flex-col bg-[#F6F3ED]/30 p-4 rounded-xl border border-[#C2CBD3]/20">
-                <span className="text-[11px] font-bold text-[#313851]/50 uppercase tracking-wider mb-1">{key}</span>
-                <span className="text-base font-semibold text-[#313851]">{value?.toString()}</span>
-              </div>
+      {/* Content Area - Split */}
+      <div className="flex flex-1 gap-6 min-h-0 overflow-hidden">
+        {/* Left Sidebar - Fields */}
+        <div className="w-1/3 flex flex-col border-r border-[#C2CBD3]/20 pr-4 overflow-y-auto pb-4">
+          <h4 className="text-[11px] font-bold text-[#313851]/50 uppercase tracking-wider mb-4">Include Fields</h4>
+          <div className="flex flex-col gap-4">
+            {Object.keys(extractedData).map(key => (
+              <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                {/* Custom Toggle Switch */}
+                <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${activeFields[key] ? 'bg-[#6366F1]' : 'bg-[#C2CBD3]'}`}>
+                  <input type="checkbox" className="sr-only" checked={!!activeFields[key]} onChange={() => toggleField(key)} />
+                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${activeFields[key] ? 'translate-x-4' : 'translate-x-0'}`} />
+                </div>
+                <span className={`text-sm font-medium truncate ${activeFields[key] ? 'text-[#313851]' : 'text-[#313851]/50 line-through'}`}>
+                  {key}
+                </span>
+              </label>
             ))}
-          </motion.div>
-        )}
+          </div>
+        </div>
+
+        {/* Right Content - Viewer */}
+        <div className="w-2/3 flex flex-col overflow-y-auto pb-4 pr-2">
+          {viewMode === 'ui' ? (
+            <div className="flex flex-col gap-3">
+              <AnimatePresence mode="popLayout">
+                {Object.entries(filteredData).map(([key, value]) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, height: 0, padding: 0, marginBottom: 0, border: 0 }}
+                    transition={{ duration: 0.2 }}
+                    key={key} 
+                    className="flex flex-col bg-[#F6F3ED]/40 p-3.5 rounded-xl border border-[#C2CBD3]/20 overflow-hidden"
+                  >
+                    <span className="text-[10px] font-bold text-[#313851]/50 uppercase tracking-wider mb-1">{key}</span>
+                    <span className="text-sm font-semibold text-[#313851] truncate">{value?.toString()}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {Object.keys(filteredData).length === 0 && (
+                <p className="text-sm text-[#313851]/50 italic mt-2">All fields are hidden.</p>
+              )}
+            </div>
+          ) : (
+            <motion.div 
+              key={viewMode}
+              initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-[#313851]/5 rounded-xl p-5 font-mono text-[13px] text-[#313851] overflow-x-auto min-h-full"
+            >
+              <pre className="whitespace-pre-wrap">{getFormatOutput()}</pre>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );
