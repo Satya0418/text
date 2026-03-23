@@ -173,15 +173,17 @@ const DataViewer = ({ file }) => {
         <div className="w-2/3 flex flex-col overflow-y-auto pb-4 pr-2 relative">
           
           {viewMode !== 'ui' && (
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={copyToClipboard}
-              className={`absolute top-2 right-2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`absolute top-2 right-2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                 copied ? 'bg-green-100 text-green-700' : 'bg-[#C2CBD3]/30 text-[#313851]/70 hover:bg-[#C2CBD3]/50 hover:text-[#313851]'
               }`}
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </motion.button>
           )}
 
           {viewMode === 'ui' ? (

@@ -145,18 +145,18 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
       {/* Dashboard Stats & Filters */}
       <div className="mt-8 mb-4 flex flex-col gap-6">
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+          <motion.div whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)' }} className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col transition-all duration-300">
             <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Completed</span>
             <span className="text-2xl font-extrabold text-[#6366F1]">{files.filter(f => f.status === 'done').length}</span>
-          </div>
-          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+          </motion.div>
+          <motion.div whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)' }} className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col transition-all duration-300">
             <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Processing</span>
             <span className="text-2xl font-extrabold text-orange-400">{files.filter(f => f.status === 'processing' || f.status === 'uploading').length}</span>
-          </div>
-          <div className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col">
+          </motion.div>
+          <motion.div whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)' }} className="bg-[#F6F3ED]/60 rounded-xl p-4 border border-[#C2CBD3]/30 flex flex-col transition-all duration-300">
             <span className="text-xs font-bold text-[#313851]/50 uppercase tracking-wider mb-1">Failed</span>
             <span className="text-2xl font-extrabold text-red-500">{files.filter(f => f.status === 'failed').length}</span>
-          </div>
+          </motion.div>
         </div>
 
         <div className="flex items-center justify-between border-b border-[#C2CBD3]/20 pb-2">
@@ -178,23 +178,32 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
       {/* File List */}
       <div className="flex flex-col gap-3 min-h-[200px]">
         {files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center text-[#313851]/40 border-2 border-dashed border-[#C2CBD3]/30 rounded-xl bg-[#F6F3ED]/20">
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
+            className="flex flex-col items-center justify-center p-8 text-center text-[#313851]/40 border-2 border-dashed border-[#C2CBD3]/30 rounded-xl bg-[#F6F3ED]/20"
+          >
             <p className="text-sm font-medium">No files uploaded yet.</p>
-          </div>
+          </motion.div>
         ) : (
           files.filter(f => {
             if (filter === 'processing') return f.status === 'processing' || f.status === 'uploading';
             if (filter === 'completed') return f.status === 'done';
             return true;
           }).map((fileObj) => (
-            <div 
+            <motion.div 
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              whileHover={(fileObj.status === 'done' || fileObj.status === 'failed') ? { scale: 1.01 } : {}}
+              whileTap={(fileObj.status === 'done' || fileObj.status === 'failed') ? { scale: 0.99 } : {}}
               key={fileObj.id} 
               onClick={() => {
                 if(fileObj.status === 'done' || fileObj.status === 'failed') {
                   onSelectFile && onSelectFile(fileObj);
                 }
               }}
-              className={`relative overflow-hidden bg-white border rounded-xl p-4 transition-all ${
+              className={`relative overflow-hidden bg-white border rounded-xl p-4 transition-colors ${
                 (fileObj.status === 'done' || fileObj.status === 'failed') ? 'cursor-pointer hover:border-[#6366F1]/50' : 'opacity-90'
               } ${
                 selectedFileId === fileObj.id 
@@ -300,7 +309,7 @@ const FileUpload = ({ onSelectFile, selectedFileId }) => {
                   <X size={18} />
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))
         )}
       </div>

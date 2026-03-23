@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import FileUpload from '../components/ui/FileUpload';
 import DataViewer from '../components/ui/DataViewer';
 
@@ -26,7 +27,12 @@ const DashboardPage = () => {
       </nav>
 
       {/* Main Area */}
-      <main className="w-full max-w-7xl mx-auto px-6 py-8 flex gap-6 flex-1 h-[calc(100vh-4rem)]">
+      <motion.main 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
+        className="w-full max-w-7xl mx-auto px-6 py-8 flex gap-6 flex-1 h-[calc(100vh-4rem)]"
+      >
         
         {/* LEFT PANEL */}
         <div className="w-1/2 flex flex-col bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(49,56,81,0.08)] p-8 border border-[#C2CBD3]/20 overflow-y-auto">
@@ -40,7 +46,7 @@ const DashboardPage = () => {
            <DataViewer file={selectedFile} />
         </div>
 
-      </main>
+      </motion.main>
     </div>
   );
 };
