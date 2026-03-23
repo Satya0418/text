@@ -11,6 +11,7 @@ const predictPdfBtn = document.getElementById("predictPdfBtn");
 const pdfShow = document.getElementById("pdfShow");
 const pdfExtracted = document.getElementById("pdfExtracted");
 const pdfDetails = document.getElementById("pdfDetails");
+const pdfPageOutputs = document.getElementById("pdfPageOutputs");
 
 let handwrittenFile = null;
 let pdfFile = null;
@@ -52,7 +53,7 @@ predictHandwrittenBtn.addEventListener("click", async () => {
 
     const data = await resp.json();
     handwrittenPrediction.textContent = data.prediction || "(empty)";
-    handwrittenExtracted.textContent = data.prediction || "(empty)";
+    handwrittenExtracted.textContent = (data.prediction || "").trim() || "(empty extraction)";
     handwrittenDetails.textContent = `confidence=${(data.confidence * 100).toFixed(2)}%, timesteps=${data.timesteps}, classes=${data.num_classes}`;
   } catch (error) {
     handwrittenPrediction.textContent = "Error";
@@ -92,14 +93,16 @@ predictPdfBtn.addEventListener("click", async () => {
 
     const data = await resp.json();
     pdfShow.textContent = `${data.pages} page(s) processed`;
-    pdfExtracted.textContent = data.extracted_text || "(empty)";
+    pdfExtracted.textContent = (data.extracted_text || "").trim() || "(empty extraction)";
     pdfDetails.textContent = data.page_results
       .map((x) => `p${x.page}:${(x.confidence * 100).toFixed(1)}%`)
       .join(" | ");
+    pdfPageOutputs.textContent = JSON.stringify(data.page_results, null, 2);
   } catch (error) {
     pdfShow.textContent = "Error";
     pdfExtracted.textContent = "-";
     pdfDetails.textContent = error.message;
+    pdfPageOutputs.textContent = "-";
   } finally {
     predictPdfBtn.disabled = false;
     predictPdfBtn.textContent = "Extract PDF";
